@@ -1,0 +1,97 @@
+---
+import Layout from "@/layouts/Layout.astro"
+import { db, eq, Package, Product, Tour } from "astro:db"
+
+// Obtener el ID del producto de los parámetros de la URL
+const productId = Astro.params.id
+
+let productData: any | null = null
+let errorMessage: string | null = null
+
+try {
+	// Consultar la base de datos para obtener el producto por su ID
+	// Usamos leftJoin para incluir datos de las tablas Tour o Package si existen
+	const productResult = await db
+		.select()
+		.from(Product)
+		.where(eq(Product.id, productId))
+		.leftJoin(Tour, eq(Product.id, Tour.productId))
+		.leftJoin(Package, eq(Product.id, Package.productId))
+		.limit(1)
+
+	// Si se encuentra un resultado, formatearlo
+	if (productResult.length > 0) {
+		const result = productResult[0]
+		productData = {
+			...result.Product,
+			...result.Tour,
+			...result.Package,
+		}
+	} else {
+		errorMessage = "El producto no fue encontrado."
+	}
+} catch (e) {
+	console.error("Error al obtener los detalles del producto:", e)
+	errorMessage = "Hubo un error al cargar la información del producto."
+}
+---
+
+<Layout title={productData?.name || "Producto no encontrado"}>
+	<div class="mx-auto w-11/12 rounded-lg bg-beaver-900 p-8 text-gray-300 md:max-w-4xl md:p-12">
+		{
+			errorMessage ? (
+				<div class="flex flex-col items-center justify-center py-24 text-center">
+					<h1 class="mb-4 text-4xl font-bold text-red-400">{errorMessage}</h1>
+					<p class="text-gray-400">Por favor, verifica la URL o vuelve a la página principal.</p>
+					<a
+						href="/"
+						class="mt-6 inline-block transform rounded-lg bg-green-150 px-6 py-2 font-semibold text-beaver-900 shadow-md transition-transform hover:scale-105"
+					>
+						Volver al Inicio
+					</a>
+				</div>
+			) : productData ? (
+				<div class="space-y-6">
+					<h1 class="mb-4 text-4xl font-extrabold text-beaver-900 md:text-5xl dark:text-gray-100">
+						{productData.name}
+					</h1>
+					<p class="text-xl leading-relaxed text-gray-400">{productData.shortDescription}</p>
+
+					<div class="space-y-4 rounded-lg bg-gray-800 p-6 shadow-md">
+						<h2 class="text-2xl font-semibold text-gray-200">Detalles del Producto</h2>
+						<p class="text-gray-400">
+							<span class="font-medium text-gray-200">Tipo:</span> {productData.productType}
+						</p>
+						<p class="text-gray-400">
+							<span class="font-medium text-gray-200">Precio (USD):</span> $
+							{productData.basePriceUSD}
+						</p>
+						<p class="text-gray-400">
+							<span class="font-medium text-gray-200">Precio (BOB):</span>{" "}
+							{productData.basePriceBOB} BOB
+						</p>
+						<p class="text-gray-400">
+							<span class="font-medium text-gray-200">Creado en:</span>{" "}
+							{new Date(productData.creationDate).toLocaleDateString()}
+						</p>
+						<p class="text-gray-400">
+							<span class="font-medium text-gray-200">Última Actualización:</span>{" "}
+							{new Date(productData.lastUpdated).toLocaleDateString()}
+						</p>
+					</div>
+
+					<div class="rounded-lg bg-gray-800 p-6 shadow-md">
+						<h2 class="mb-4 text-2xl font-semibold text-gray-200">Descripción Completa</h2>
+						<p class="whitespace-pre-wrap leading-relaxed text-gray-400">
+							{productData.longDescription}
+						</p>
+					</div>
+				</div>
+			) : (
+				<div class="flex items-center justify-center">
+					<p class="text-gray-500">Cargando...</p>
+				</div>
+			)
+		}
+	</div>
+</Layout>

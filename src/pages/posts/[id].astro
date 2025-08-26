@@ -1,0 +1,84 @@
+---
+import Layout from "@/layouts/Layout.astro"
+import { db, eq, Publication, User } from "astro:db"
+
+const { id } = Astro.params
+if (!id || typeof id !== "string") {
+	console.error("Invalid ID format")
+	return new Response("Not Found", { status: 404 })
+}
+
+let post
+
+try {
+	const posts = await db
+		.select()
+		.from(Publication)
+		.innerJoin(User, eq(Publication.user_id, User.id))
+		.where(eq(Publication.id, id))
+
+	if (!posts.length || !posts[0].Publication || !posts[0].User) {
+		console.error("Post data is missing or malformed", posts)
+		return new Response("Not Found", { status: 404 })
+	}
+
+	post = posts[0]
+} catch (e) {
+	console.error("Error fetching Posts: ", e)
+	return new Response("Internal server error", { status: 500 })
+}
+---
+
+<Layout title={post.Publication.title}>
+	<article
+		class="justify-evenly rounded-xl bg-black/30 pb-32 sm:mt-10 sm:p-16 sm:px-20 xl:mx-80 xl:flex"
+	>
+		<div
+			class="scroll-snap-x proximity scroll-snap-y relative flex h-[484px] justify-center overflow-x-scroll overflow-y-scroll overscroll-x-contain sm:rounded-xl lg:min-w-[420px]"
+		>
+			<figure class="flex min-w-[374px] max-w-[420px] sm:min-w-[520px] xl:min-w-[420px]">
+				{
+					(Array.isArray(post.Publication.images) ? post.Publication.images : []).map(
+						(el: string, index: number) => (
+							<img
+								class="scroll-snap-align-center relative flex h-full w-full flex-col object-contain"
+								src={el}
+								alt={`Image-${index}`}
+							/>
+						)
+					)
+				}
+			</figure>
+		</div>
+		<div class="flex flex-col justify-center p-5 text-slate-300 sm:mt-6 lg:mx-10">
+			<h1 class="mb-9 text-center text-lg sm:text-2xl">{post.Publication.title}</h1>
+			<h2 class="mb-5 text-sm sm:text-base">{post.Publication.description}</h2>
+
+			<!-- <span class="text-lg flex justify-evenly">
+        <small class="font-thin">Desde:</small>
+        {from}
+      </span>
+      <span class="text-lg flex justify-evenly">
+        <small class="font-thin">Destino:</small>
+        {to}
+      </span>  -->
+			<h2 class="text-md mt-9 text-center">{`$ ${post.Publication.price}`}</h2>
+			<div class="mt-10 flex h-20 flex-row items-end justify-around">
+				<a
+					href="tel:+56950246702"
+					target="_blank"
+					class="rounded-lg border-2 px-4 py-2 text-sm text-white shadow-md hover:border-green-600 sm:text-sm md:px-4 md:font-bold"
+				>
+					Llamar
+				</a>
+				<a
+					href={`https://wa.me/+${post.Publication.price}/?text=Hola,%20Estoy%20interesado%20en%20el%20servicio:%20${post.Publication.title}%20desde:%20${post.Publication.price},%20hacia:%20${post.Publication.price}`}
+					target="_blank"
+					class="rounded-lg border-2 border-white bg-green-800 px-4 py-2 text-sm text-white shadow-md hover:border-black hover:bg-green-600 sm:text-sm md:px-4 md:font-bold"
+				>
+					<p>Whatsapp</p>
+				</a>
+			</div>
+		</div>
+	</article>
+</Layout>

@@ -1,0 +1,17 @@
+---
+import { getSession } from "auth-astro/server"
+
+const session = await getSession(Astro.request)
+---
+
+<section class="flex items-center justify-between gap-5 px-20 md:mx-20">
+	<div>
+		<a href="/account/posts" class="text-xs text-white transition hover:scale-110 md:text-lg">
+			MIS PUBLICACIONES
+		</a>
+		<p class="text-gray-600">{session?.user?.email}</p>
+	</div>
+	<div class="h-16 w-16">
+		<img src={session?.user?.image} alt={session?.user?.name} class="w-full" />
+	</div>
+</section>

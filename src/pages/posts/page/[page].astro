@@ -1,0 +1,94 @@
+---
+import Layout from "@/layouts/Layout.astro"
+import { count, db, desc, eq, Publication, User } from "astro:db"
+
+const itemsPerPage = 10
+
+const { page } = Astro.params
+if (!page) return
+const currentPage = parseInt(page, 10) || 1
+const offset = (currentPage - 1) * itemsPerPage
+
+let publications
+
+try {
+	publications = await db
+		.select()
+		.from(Publication)
+		.innerJoin(User, eq(Publication.user_id, User.id))
+		.orderBy(desc(Publication.published))
+		.limit(itemsPerPage)
+		.offset(offset)
+} catch (err) {
+	console.error("Error fetching publications", err)
+}
+
+const totalPublications = await db.select({ count: count() }).from(Publication)
+const total = totalPublications[0]?.count || 0
+const totalPages = Math.ceil(total / itemsPerPage)
+// console.log("totalPages: ", totalPages)
+
+const truncateWords = (text: string, maxWords = 10) => {
+	return text.split(" ").slice(0, maxWords).join(" ") + "..."
+}
+---
+
+<Layout title="Posts">
+	<main class="px-3 text-gray-700 sm:my-9 sm:px-20 xl:px-80">
+		<h1 class="text-center text-5xl text-gray-900">PUBLICACIONES</h1>
+		<section
+			class="mt-6 flex flex-col justify-center gap-3 sm:mt-9 sm:gap-6"
+			id="publications-container"
+		>
+			{
+				publications ? (
+					publications.map((el) => (
+						<a href={`/posts/${el.Publication.id}`}>
+							<article class="relative flex h-52 rounded-lg bg-white shadow-sm transition-shadow duration-200 hover:shadow-md sm:h-60 sm:p-3">
+								<div class="h-full w-40 rounded-l-lg bg-gray-200 sm:w-60">
+									{Array.isArray(el.Publication.images) ? (
+										<img
+											src={el.Publication.images[0]}
+											alt="First image"
+											class="h-full w-full rounded-l-lg object-cover"
+										/>
+									) : null}
+								</div>
+								<div class="flex w-full flex-col gap-5 px-4 py-2 sm:gap-6">
+									<h2 class="text-lg text-gray-800">{el.Publication?.title}</h2>
+									<p class="text-gray-600 md:text-xl">
+										{truncateWords(el.Publication?.description)}
+									</p>
+									<p class="text-gray-500">
+										{el.Publication?.city_id} - {el.Publication?.vehicle_type_id}
+									</p>
+									<p class="text-green-600">🟢 En servicio</p> {/* Color para "En servicio" */}
+									<p class="absolute bottom-5 end-5 font-semibold text-gray-800">
+										$ {el.Publication?.price}
+									</p>
+								</div>
+							</article>
+						</a>
+					))
+				) : (
+					<p class="text-center text-gray-600">No se encontraron publicaciones.</p>
+				)
+			}
+		</section>
+
+		<div class="my-12 flex justify-around">
+			<a
+				href={`/posts/page/${currentPage - 1}`}
+				class={`bg-gray-100 text-gray-800 py-1 px-2 sm:py-2 sm:px-4 rounded-lg shadow-sm hover:bg-gray-200 transition-colors duration-200 ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}`}
+			>
+				⬅︎ Anterior
+			</a>
+			<a
+				href={`/posts/page/${currentPage + 1}`}
+				class={`bg-gray-100 text-gray-800 py-1 px-2 sm:py-2 sm:px-4 rounded-lg shadow-sm hover:bg-gray-200 transition-colors duration-200 ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}`}
+			>
+				Siguiente ➡︎
+			</a>
+		</div>
+	</main>
+</Layout>

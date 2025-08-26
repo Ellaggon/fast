@@ -1,0 +1,213 @@
+---
+import Layout from "@/layouts/Layout.astro"
+import SignInPage from "@/pages/SignInPage.astro"
+import { db, eq, Package, Product, Provider, Tour } from "astro:db"
+import { getSession } from "auth-astro/server"
+
+const session = await getSession(Astro.request)
+
+let userProducts: any[] = []
+let errorMessage: string | null = null
+let providerId: string | null = null
+
+try {
+	// 1. Obtener el providerId del usuario a partir de su email
+	// Asumimos que la tabla Provider tiene una columna 'email'
+	const providerResult = await db
+		.select({
+			id: Provider.id,
+		})
+		.from(Provider)
+		.where(eq(Provider.userEmail, session?.user?.email))
+		.limit(1)
+
+	if (providerResult.length === 0) {
+		// Si no se encuentra un proveedor, redirigir al formulario de registro
+		// El mensaje en la URL puede ser manejado por el formulario de registro.
+		return Astro.redirect("/forms/provider?message=not_registered")
+	}
+	providerId = providerResult[0].id
+
+	// Usar el providerId para obtener todos los productos del proveedor
+	const products = await db
+		.select()
+		.from(Product)
+		.where(eq(Product.providerId, providerId))
+		.leftJoin(Tour, eq(Product.id, Tour.productId))
+		.leftJoin(Package, eq(Product.id, Package.productId))
+	// console.log("products: ", products)
+
+	// Formatear los resultados en un array limpio
+	userProducts = products.map((el) => {
+		const combinedData = {
+			...el.Product,
+			...el.Tour,
+			...el.Package,
+		}
+		// console.log("combinedData", combinedData)
+
+		return {
+			id: combinedData.id,
+			name: combinedData.name,
+			productType: combinedData.productType,
+			basePriceUSD: combinedData.basePriceUSD,
+			basePriceBOB: combinedData.basePriceBOB,
+			cityId: combinedData.cityId,
+		}
+	})
+	console.log("userProducts: ", userProducts)
+} catch (e) {
+	console.error("Error al obtener los productos del proveedor: ", e)
+	errorMessage = "Hubo un error al cargar los productos. Por favor, inténtalo de nuevo más tarde."
+}
+---
+
+<Layout title="Panel del Proveedor">
+	<div class="mx-auto w-11/12 max-w-7xl pb-24 pt-12 text-gray-200">
+		<div class="mb-8 flex flex-col items-center justify-between md:mb-12 md:flex-row">
+			<h1 class="mb-4 text-3xl font-extrabold text-beaver-900 md:mb-0 md:text-4xl">
+				Panel del Proveedor
+			</h1>
+			<a
+				href="/forms/tourPackage"
+				class="transform rounded-lg bg-green-150 px-6 py-2 font-semibold text-beaver-900 shadow-md transition-transform hover:scale-105"
+			>
+				Crear Nuevo Producto
+			</a>
+		</div>
+
+		<div class="rounded-lg bg-beaver-900 p-6 shadow-lg md:p-8">
+			{
+				session ? (
+					<div class="mx-auto">
+						{errorMessage ? (
+							<div class="border-l-4 border-red-500 bg-red-100 p-4 text-red-700" role="alert">
+								<p class="font-bold">Error</p>
+								<p>{errorMessage}</p>
+							</div>
+						) : userProducts.length === 0 ? (
+							<div>
+								<p class="mb-4 text-lg">Aún no has creado nungún tour o paquete.</p>
+								<p class="text-sm">
+									Haz clic en el boton "Crear Nuevo Producto" para empezar a vender.
+								</p>
+							</div>
+						) : (
+							<div class="overflow-x-auto">
+								<table class="mun-w-full divide-y divide-gray-700">
+									<thead class="bg-gray-800">
+										<tr>
+											<th
+												scope="col"
+												class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400"
+											>
+												Nombre
+											</th>
+											<th
+												scope="col"
+												class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400"
+											>
+												Tipo
+											</th>
+											<th
+												scope="col"
+												class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400"
+											>
+												Precio (USD)
+											</th>
+											<th
+												scope="col"
+												class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400"
+											>
+												Precio (BOB)
+											</th>
+											<th scope="col" class="relative px-6 py-3">
+												<span class="sr-only">Acciones</span>
+											</th>
+										</tr>
+									</thead>
+									<tbody>
+										{userProducts.map((el) => (
+											<tr>
+												<td class="font-madium whitespace-nowrap px-6 py-4 text-sm text-gray-200">
+													{el.name}
+												</td>
+												<td class="whitespace-nowrap px-6 py-4 text-sm capitalize text-gray-300">
+													{el.productType}
+												</td>
+												<td class="whitespace-nowrap px-6 py-4 text-sm text-gray-300">
+													{el.basePriceUSD}
+												</td>
+												<td class="whitespace-nowrap px-6 py-4 text-sm text-gray-300">
+													{el.basePriceBOB}
+												</td>
+												<td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium text-gray-300">
+													<a
+														href={`/products/${el.id}`}
+														class="translation-colors mr-4 text-indigo-400 hover:text-indigo-300"
+													>
+														Ver
+													</a>
+													<a
+														href={`/forms/tourPackage/${el.id}`}
+														class="translation-colors mr-4 text-yellow-400 hover:text-yellow-300"
+													>
+														Editar
+													</a>
+													<button
+														data-product-id={el.id}
+														class="translation-colors delete-button text-red-400 hover:text-red-300"
+													>
+														Eliminar
+													</button>
+												</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</div>
+						)}
+					</div>
+				) : (
+					<SignInPage />
+				)
+			}
+		</div>
+	</div>
+</Layout>
+
+<script>
+	const $deleteBtns = document.querySelectorAll(".delete-button")
+
+	$deleteBtns.forEach((el) => {
+		el.addEventListener("click", async (e) => {
+			const button = e.currentTarget as HTMLButtonElement
+			const productId = button.dataset.productId
+
+			if (
+				confirm(
+					"¿Estás seguro de que quieres eliminar este producto? Esta acción no se puede deshacer."
+				)
+			) {
+				try {
+					const res = await fetch("/api/products/delete", {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({ productId }),
+					})
+					if (res.ok) {
+						window.location.reload()
+					} else {
+						const errorText = await res.text()
+						alert(`Error al eliminar el producto: ${errorText}`)
+					}
+				} catch (e) {
+					console.error("Error: ", e)
+					alert("Hubo un error al procesar la solicitud.")
+				}
+			}
+		})
+	})
+</script>

@@ -1,0 +1,275 @@
+---
+import Layout from "@/layouts/Layout.astro"
+import SignInPage from "@/pages/SignInPage.astro"
+import { db, eq, User } from "astro:db"
+import { getSession } from "auth-astro/server"
+
+const session = await getSession(Astro.request)
+let providerId = ""
+
+// Si hay una sesión activa, busca el usuario y su providerId
+if (session?.user?.email) {
+	const user = await db.select().from(User).where(eq(User.email, session.user.email)).get()
+	console.log(user)
+	if (user?.providerId) {
+		providerId = user.providerId
+		console.log(`providerId de ${session?.user?.name}: `, providerId)
+	} else {
+		console.error("No se encontró providerId para el usuario:", session.user.email)
+	}
+}
+---
+
+<Layout title="Crear Tour o Paquete">
+	{
+		session ? (
+			<article class="mx-auto w-11/12 rounded-lg bg-beaver-900 p-8 text-gray-300 md:max-w-3xl md:p-12">
+				<h2 class="mb-4 text-2xl font-bold">Crear Tour o Paquete</h2>
+				<p class="mb-6 text-sm text-gray-400">
+					Completa el formulario para registrar un nuevo tour o paquete turístico.
+				</p>
+
+				<form
+					id="tourPackageForm"
+					method="post"
+					class="flex flex-col gap-6"
+					data-form-type="tourPackage"
+				>
+					{/* <!-- providerId - campo oculto  --> */}
+					<input type="hidden" name="providerId" value={providerId} />
+
+					{/* <!-- Tipo de Producto --> */}
+					<div>
+						<span class="block text-sm font-medium text-gray-400">Tipo de Producto</span>
+						<div class="mt-3 flex gap-6">
+							{/* <!-- Tour --> */}
+							<div class="w-1/2">
+								<input
+									type="radio"
+									id="tourRadio"
+									name="productType"
+									value="tour"
+									class="peer hidden"
+									required
+								/>
+								<label
+									for="tourRadio"
+									class="cursor-pointer rounded-md border border-gray-600 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-700 peer-checked:bg-green-150 peer-checked:text-beaver-900"
+								>
+									Tour
+								</label>
+
+								{/* <!-- Detalles Tour --> */}
+								<div class="mt-4 hidden space-y-4 peer-checked:block">
+									<h3 class="text-lg font-semibold">Detalles del Tour</h3>>
+									<label class="block text-sm">
+										<span class="text-gray-400">Nombre del Tour</span>
+										<input
+											type="text"
+											name="name"
+											placeholder="Ej: Tour al Salar de Uyuni"
+											class="mt-1 w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:ring-2 focus:ring-green-150"
+										/>
+									</label>
+									<label class="block text-sm">
+										<span class="text-gray-400">Duración</span>
+										<input
+											type="text"
+											name="duration"
+											placeholder="Ej: '3 Horas' o '5 Días'"
+											class="mt-1 w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm"
+										/>
+									</label>
+									<label class="block text-sm">
+										<span class="text-gray-400">Nivel de Dificultad</span>
+										<input
+											type="text"
+											name="difficultyLevel"
+											placeholder="Ej: Fácil, Moderado, Difícil"
+											class="mt-1 w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm"
+										/>
+									</label>
+									<label for="guideLanguages" class="block text-sm font-medium text-gray-400">
+										Idiomas del Guía (separados por comas)
+										<input
+											type="text"
+											id="guideLanguages"
+											name="guideLanguages"
+											placeholder="Ej: 'Español, Inglés'"
+											class="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:border-green-150 focus:outline-none focus:ring-green-150 sm:text-sm"
+										/>
+									</label>
+									<label for="includes" class="block text-sm font-medium text-gray-400">
+										Incluye
+										<textarea
+											name="includes"
+											id="includes"
+											rows="3"
+											placeholder="Lista de servicios incluidos"
+											class="mt-1 block w-full rounded border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-green-150 focus:outline-none focus:ring-green-150 sm:text-sm"
+										/>
+									</label>
+									<label for="excludes" class="block text-sm font-medium text-gray-400">
+										Excluye
+										<textarea
+											name="excludes"
+											id="excludes"
+											rows="3"
+											placeholder="Servicios no incluidos"
+											class="mt-1 block w-full rounded border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-green-150 focus:outline-none focus:ring-green-150 sm:text-sm"
+										/>
+									</label>
+								</div>
+							</div>
+
+							{/* <!-- Paquete --> */}
+							<div class="w-1/2">
+								<input
+									type="radio"
+									id="packageRadio"
+									name="productType"
+									value="package"
+									class="peer hidden"
+								/>
+								<label
+									for="packageRadio"
+									class="cursor-pointer rounded-md border border-gray-600 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-700 peer-checked:bg-green-150 peer-checked:text-beaver-900"
+								>
+									Paquete
+								</label>
+
+								{/* <!-- Detalles Paquete --> */}
+								<div class="mt-4 hidden space-y-4 peer-checked:block">
+									<h3 class="text-lg font-semibold">Detalles del Paquete</h3>
+
+									<label class="block text-sm">
+										<span class="text-gray-400">Nombre del Paquete</span>
+										<input
+											type="text"
+											name="name"
+											placeholder="Ej: Paquete Aventura en la Amazonía"
+											class="mt-1 w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm"
+										/>
+									</label>
+
+									<label class="block text-sm">
+										<span class="text-gray-400">Número de Días</span>
+										<input
+											type="number"
+											name="days"
+											min="1"
+											placeholder="Cantidad de días"
+											class="mt-1 w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm"
+										/>
+									</label>
+
+									<label class="block text-sm">
+										<span class="text-gray-400">Número de Noches</span>
+										<input
+											type="number"
+											name="nights"
+											min="0"
+											placeholder="Cantidad de noches"
+											class="mt-1 w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm"
+										/>
+									</label>
+									<label class="block text-sm">
+										<span class="text-gray-400">Itinerario</span>
+										<textarea
+											name="itinerary"
+											rows="4"
+											placeholder="Ej: Día 1: Llegada a La Paz... Día 2: Excursión al Lago Titicaca..."
+											class="mt-1 w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm"
+										/>
+									</label>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					{/* <!-- Campos Comunes --> */}
+					<div class="space-y-4">
+						{/* <!-- cityId --> */}
+						<label class="block text-xs font-medium text-gray-400 md:text-sm">
+							Ciudad
+							<select
+								name="cityId"
+								id="cityId"
+								class="mt-1 block w-full cursor-pointer rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-sm font-medium shadow-sm focus:border-green-150 focus:outline-none focus:ring-green-150"
+								required
+							>
+								<option value="">Selecciona una ciudad...</option>
+								<option value="uuid-city-lapaz">La Paz</option>
+								<option value="uuid-city-santacruz">Santa Cruz</option>
+								<option value="uuid-city-cochabamba">Cochabamba</option>
+								<option value="uuid-city-oruro">Oruro</option>
+								<option value="uuid-city-potosi">Potosí</option>
+								<option value="uuid-city-sucre">Sucre</option>
+								<option value="uuid-city-tarija">Tarija</option>
+								<option value="uuid-city-beni">Beni</option>
+								<option value="uuid-city-pando">Pando</option>
+							</select>
+						</label>
+
+						<label class="block text-sm">
+							<span class="text-gray-400">Descripción Corta</span>
+							<textarea
+								name="shortDescription"
+								rows="2"
+								class="mt-1 w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm"
+							/>
+						</label>
+
+						<label class="block text-sm">
+							<span class="text-gray-400">Descripción Completa</span>
+							<textarea
+								name="longDescription"
+								rows="4"
+								class="mt-1 w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm"
+							/>
+						</label>
+
+						<div class="grid grid-cols-2 gap-4">
+							<label class="block text-sm">
+								<span class="text-gray-400">Precio (USD)</span>
+								<input
+									type="number"
+									name="basePriceUSD"
+									required
+									placeholder="Ej: 200"
+									class="mt-1 w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm"
+								/>
+							</label>
+
+							<label class="block text-sm">
+								<span class="text-gray-400">Precio (BOB)</span>
+								<input
+									type="number"
+									name="basePriceBOB"
+									required
+									placeholder="Ej: 1400"
+									class="mt-1 w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm"
+								/>
+							</label>
+						</div>
+					</div>
+
+					{/* <!-- Botón Guardar --> */}
+					<div class="mt-8 flex justify-end">
+						<button
+							type="submit"
+							class="h-10 w-40 rounded-lg bg-green-150 font-semibold text-beaver-900 transition hover:bg-green-200"
+						>
+							Guardar
+						</button>
+					</div>
+				</form>
+			</article>
+		) : (
+			<div class="flex h-[70vh] items-center justify-center">
+				<SignInPage />
+			</div>
+		)
+	}
+</Layout>
+<script src="/src/lib/utils/formHandler.ts"></script>

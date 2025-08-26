@@ -1,0 +1,197 @@
+---
+import Layout from "@/layouts/Layout.astro"
+import { db, eq, Package, Product, Provider, Tour } from "astro:db"
+import { getSession } from "auth-astro/server"
+// import SignInPage from "../../components/SignInPage.astro"
+import { z } from "zod"
+
+// Definir un esquema de validación ligero si lo necesitas
+const ProductSchema = z.object({
+	id: z.string(),
+	name: z.string(),
+	shortDescription: z.string(),
+	longDescription: z.string(),
+	productType: z.string(),
+	basePriceUSD: z.number(),
+	basePriceBOB: z.number(),
+	cityId: z.string(),
+})
+
+// Obtener la sesión del usuario y el ID del producto de la URL
+const session = await getSession(Astro.request)
+const productId = Astro.params.id
+
+// Redirigir si no hay sesión o ID de producto válido
+if (!session || !session.user?.email || !productId) {
+	return Astro.redirect("/auth/signin")
+}
+
+let errorMessage: string | null = null
+let productToEdit: z.infer<typeof ProductSchema> | null = null
+
+try {
+	// 1. Obtener el providerId del usuario usando su email
+	const providerResult = await db
+		.select({
+			id: Provider.id,
+		})
+		.from(Provider)
+		.where(eq(Provider.userEmail, session.user.email))
+		.limit(1)
+
+	if (providerResult.length === 0) {
+		// Redirigir si el usuario no es un proveedor registrado
+		return Astro.redirect("/forms/provider?message=not_registered")
+	}
+
+	const providerId = providerResult[0].id
+
+	// 2. Obtener el producto específico a editar y verificar que pertenezca al proveedor
+	const products = await db
+		.select()
+		.from(Product)
+		.where(eq(Product.id, productId))
+		.where(eq(Product.providerId, providerId))
+		.leftJoin(Tour, eq(Product.id, Tour.productId))
+		.leftJoin(Package, eq(Product.id, Package.productId))
+
+	if (products.length === 0) {
+		// Redirigir si el producto no existe o no le pertenece a este proveedor
+		return Astro.redirect("/dashboard/provider")
+	}
+
+	//     // 3. Formatear y validar los datos del producto
+	const combinedData = {
+		...products[0].Product,
+		...products[0].Tour,
+		...products[0].Package,
+	}
+
+	// Usar el esquema de Zod para validar los datos del producto
+	productToEdit = ProductSchema.parse(combinedData)
+} catch (e) {
+	console.error("Error al obtener los datos del producto para edición:", e)
+	errorMessage = "Hubo un error al cargar la información del producto."
+}
+---
+
+<Layout title="Editar Producto">
+	<div class="mx-auto w-11/12 rounded-lg bg-beaver-900 p-8 text-gray-300 md:max-w-3xl md:p-12">
+		<h2 class="mb-4 text-2xl font-bold">Editar Producto</h2>
+		<p class="mb-6 text-sm text-gray-400">
+			Modifica la información de tu tour o paquete y guarda los cambios.
+		</p>
+
+		{
+			errorMessage ? (
+				<div class="mb-4 border-l-4 border-red-500 bg-red-100 p-4 text-red-700" role="alert">
+					<p class="font-bold">Error</p>
+					<p>{errorMessage}</p>
+				</div>
+			) : productToEdit ? (
+				<form action="/api/products/update" method="POST">
+					<input type="hidden" name="productId" value={productToEdit.id} />
+
+					<div class="mb-4">
+						<label for="name" class="block text-sm font-medium text-gray-400">
+							Nombre del Producto
+						</label>
+						<input
+							type="text"
+							id="name"
+							name="name"
+							class="mt-1 block w-full rounded-md border-gray-700 bg-gray-800 px-3 text-white shadow-sm focus:border-green-150 focus:ring focus:ring-green-150 focus:ring-opacity-50"
+							value={productToEdit.name}
+							required
+						/>
+					</div>
+
+					<div class="mb-4">
+						<label for="shortDescription" class="block text-sm font-medium text-gray-400">
+							Descripción Corta
+						</label>
+						<textarea
+							id="shortDescription"
+							name="shortDescription"
+							rows="2"
+							class="mt-1 block w-full rounded-md border-gray-700 bg-gray-800 px-3 text-white shadow-sm focus:border-green-150 focus:ring focus:ring-green-150 focus:ring-opacity-50"
+							required
+						>
+							{productToEdit.shortDescription}
+						</textarea>
+					</div>
+
+					<div class="mb-4">
+						<label for="longDescription" class="block text-sm font-medium text-gray-400">
+							Descripción Larga
+						</label>
+						<textarea
+							id="longDescription"
+							name="longDescription"
+							rows="4"
+							class="mt-1 block w-full rounded-md border-gray-700 bg-gray-800 px-3 text-white shadow-sm focus:border-green-150 focus:ring focus:ring-green-150 focus:ring-opacity-50"
+							required
+						>
+							{productToEdit.longDescription}
+						</textarea>
+					</div>
+
+					<div class="mb-4">
+						<label for="productType" class="block text-sm font-medium text-gray-400">
+							Tipo de Producto
+						</label>
+						<select
+							id="productType"
+							name="productType"
+							class="mt-1 block w-full rounded-md border-gray-700 bg-gray-800 px-3 text-white shadow-sm focus:border-green-150 focus:ring focus:ring-green-150 focus:ring-opacity-50"
+							required
+						>
+							<option value="Tour" selected={productToEdit.productType === "Tour"}>
+								Tour
+							</option>
+							<option value="Package" selected={productToEdit.productType === "Package"}>
+								Paquete
+							</option>
+						</select>
+					</div>
+
+					<div class="mb-4">
+						<label for="basePriceUSD" class="block text-sm font-medium text-gray-400">
+							Precio Base (USD)
+						</label>
+						<input
+							type="number"
+							id="basePriceUSD"
+							name="basePriceUSD"
+							class="mt-1 block w-full rounded-md border-gray-700 bg-gray-800 px-3 text-white shadow-sm focus:border-green-150 focus:ring focus:ring-green-150 focus:ring-opacity-50"
+							value={productToEdit.basePriceUSD}
+							required
+						/>
+					</div>
+					<div class="mb-4">
+						<label for="basePriceBOB" class="block text-sm font-medium text-gray-400">
+							Precio Base (BOB)
+						</label>
+						<input
+							type="number"
+							id="basePriceBOB"
+							name="basePriceBOB"
+							class="mt-1 block w-full rounded-md border-gray-700 bg-gray-800 px-3 text-white shadow-sm focus:border-green-150 focus:ring focus:ring-green-150 focus:ring-opacity-50"
+							value={productToEdit.basePriceBOB}
+							required
+						/>
+					</div>
+
+					<button
+						type="submit"
+						class="w-full transform rounded-lg bg-green-150 px-4 py-2 font-semibold text-beaver-900 shadow-md transition-transform hover:scale-105"
+					>
+						Guardar Cambios
+					</button>
+				</form>
+			) : (
+				<p class="text-center text-gray-500">Producto no encontrado.</p>
+			)
+		}
+	</div>
+</Layout>

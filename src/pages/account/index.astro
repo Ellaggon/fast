@@ -1,0 +1,134 @@
+---
+import Layout from "@/layouts/Layout.astro"
+import LayoutAccount from "@/layouts/LayoutAccount.astro"
+import SignInPage from "@/pages/SignInPage.astro"
+import { db, eq, Publication, User } from "astro:db"
+import { SignOut } from "auth-astro/components"
+import { getSession } from "auth-astro/server"
+
+const session = await getSession(Astro.request)
+
+let publications
+try {
+	publications = await db
+		.select()
+		.from(Publication)
+		.innerJoin(User, eq(Publication.user_id, User.id))
+} catch (e) {
+	console.error("error fetching publications in account", e)
+}
+---
+
+<Layout title="account">
+	{
+		session ? (
+			<LayoutAccount>
+				<main class="flex min-h-screen flex-col text-gray-700">
+					{" "}
+					{/* Cambiado de text-white */}
+					<article class="mt-9 flex-grow text-center">
+						<h1 class="mb-6 text-3xl font-semibold text-gray-900">Mis Publicaciones</h1>{" "}
+						{/* Nuevo título */}
+						<div class="grid gap-4">
+							{publications && publications.length > 0 ? (
+								publications.map(
+									(el) =>
+										el.User?.email === session?.user?.email && (
+											<div class="publication-item flex items-center justify-around rounded-lg bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md">
+												<p class="w-64 text-start text-sm font-medium text-gray-800 md:w-80 md:text-base">
+													{el.Publication.title}
+												</p>
+												<p class="hidden text-xs text-gray-500 md:text-sm lg:flex">
+													{new Date(el.Publication.published).toLocaleDateString("es-ES", {
+														weekday: "long",
+														year: "numeric",
+														month: "long",
+														day: "numeric",
+													})}
+												</p>
+												<button
+													class="delete my-2 rounded-lg bg-red-500 px-4 py-1 text-xs text-white shadow-sm transition hover:bg-red-600 md:text-sm"
+													data-id={el.Publication.id}
+												>
+													Eliminar
+												</button>
+											</div>
+										)
+								)
+							) : (
+								<p class="text-gray-500">No hay publicaciones para mostrar.</p>
+							)}
+						</div>
+					</article>
+					<div class="my-20 flex justify-center">
+						<SignOut class="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:bg-gray-200 hover:text-gray-800">
+							{" "}
+							{/* Estilo de botón Apple-like */}
+							Cerrar Sesión
+						</SignOut>
+					</div>
+				</main>
+			</LayoutAccount>
+		) : (
+			<div class="flex items-center justify-center">
+				<SignInPage />
+			</div>
+		)
+	}
+	<script>
+		// Mismo JavaScript, no necesita cambios de estilo
+		const $delete = document.querySelectorAll<HTMLButtonElement>(".delete")
+
+		$delete.forEach((button) => {
+			button.addEventListener("click", async () => {
+				const id = button.dataset.id
+				console.log(id)
+
+				try {
+					const res = await fetch("/api/deletePublication", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ id }),
+					})
+
+					if (res.ok) {
+						const publicationElement = button.closest(".publication-item")
+						if (publicationElement) {
+							publicationElement.remove()
+						}
+					} else {
+						const result = await res.json()
+						console.error("Error eliminando publicacion: ", result.error)
+						alert("Hubo un error al eliminar la publicación.")
+					}
+				} catch (e) {
+					console.error("Hubo un error al intentar eliminar una publicacion", e)
+				}
+			})
+		})
+	</script>
+</Layout>
+
+<style>
+	body {
+		/* Fondo degradado claro similar al estilo Apple */
+		background: linear-gradient(135deg, #e0e5ec, #f0f2f5, #e0eaf2);
+		background-size: 400% 400%;
+		animation: gradientFlowLight 20s ease infinite;
+		color: #333; /* Color de texto general para el body */
+		min-height: 100vh;
+		font-family: "SF Pro Display", "Helvetica Neue", "Segoe UI", sans-serif; /* Fuentes inspiradas en Apple */
+	}
+
+	@keyframes gradientFlowLight {
+		0% {
+			background-position: 0% 50%;
+		}
+		50% {
+			background-position: 100% 50%;
+		}
+		100% {
+			background-position: 0% 50%;
+		}
+	}
+</style>

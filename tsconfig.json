@@ -1,0 +1,20 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    // "allowJs": true,
+    // "checkJs": false,
+    "jsx": "preserve",
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "astro:db": ["./node_modules/@astrojs/db"]
+    }
+  },
+  "include": ["src", "db", "*.ts", "**/*.astro"],
+  "exclude": ["node_modules"]
+  // "resolveJsonModule": true
+}
