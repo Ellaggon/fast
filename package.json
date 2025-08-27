@@ -17,9 +17,10 @@
   },
   "dependencies": {
     "@astrojs/check": "0.9.4",
-    "@astrojs/db": "^0.16.0",
-    "@astrojs/tailwind": "5.1.4",
-    "@astrojs/vercel": "^8.2.1",
+    "@astrojs/db": "^0.17.1",
+    "@astrojs/node": "^9.4.3",
+    "@astrojs/tailwind": "^6.0.2",
+    "@astrojs/vercel": "^8.2.6",
     "@aws-sdk/client-s3": "3.863.0",
     "@aws-sdk/s3-request-presigner": "3.863.0",
     "@libsql/client": "^0.15.10",
@@ -36,7 +37,7 @@
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "8.39.0",
     "@typescript-eslint/parser": "8.39.0",
-    "astro": "^5.1.1",
+    "astro": "^5.13.4",
     "astro-eslint-parser": "1.2.2",
     "eslint": "9.32.0",
     "eslint-config-prettier": "10.1.8",
@@ -53,6 +54,7 @@
     "prettier-plugin-tailwindcss": "0.6.14"
   },
   "overrides": {
-    "@auth/core": "0.40.0"
+    "@auth/core": "0.40.0",
+    "path-to-regexp": "^7.0.0"
   }
 }
