@@ -25,14 +25,14 @@ export const POST: APIRoute = async ({ request }) => {
 		// 1. Guardar en la tabla `Product`
 		await db.insert(Product).values({
 			id: newProductId,
-			name,
+			name: name || "",
+			cityId: cityId || "",
 			shortDescription: shortDescription || null,
 			longDescription: longDescription || null,
-			productType,
-			cityId,
 			basePriceUSD,
 			basePriceBOB,
-			providerId,
+			productType: productType || "tour",
+			providerId: providerId || "",
 		})
 
 		// 2. Guardar en la tabla específica (`Tour` o `Package`)
