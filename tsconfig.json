@@ -14,7 +14,15 @@
       "astro:db": ["./node_modules/@astrojs/db"]
     }
   },
-  "include": ["src", "db", "*.ts", "**/*.astro"],
+  "include": [
+    "src",
+    "db",
+    "*.ts",
+    "**/*.astro",
+    "env.d.ts",
+    ".astro/types.d.ts",
+    ".astro/integrations/astro_db/db.d.ts"
+  ],
   "exclude": ["node_modules"]
   // "resolveJsonModule": true
 }
