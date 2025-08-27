@@ -1,5 +1,18 @@
 import { defineDb, defineTable, column, NOW } from "astro:db"
 
+const User = defineTable({
+	columns: {
+		id: column.text({ primaryKey: true }),
+		email: column.text({ unique: true }),
+		username: column.text({ unique: true, optional: true }), // Made username optional for flexibility
+		passwordHash: column.text({ optional: true }), // Store hashed passwords, NEVER plain text
+		firstName: column.text({ optional: true }),
+		lastName: column.text({ optional: true }),
+		registrationDate: column.date({ default: NOW }),
+		providerId: column.text({ references: () => Provider.columns.id, optional: true }),
+	},
+})
+
 const Publication = defineTable({
 	columns: {
 		id: column.text({ primaryKey: true }),
@@ -48,19 +61,6 @@ const Provider = defineTable({
 		contactEmail: column.text({ optional: true }),
 		phone: column.text({ optional: true }),
 		type: column.text({ optional: true }), // e.g., 'Hotel', 'Tour Operator', 'Transport'
-	},
-})
-
-const User = defineTable({
-	columns: {
-		id: column.text({ primaryKey: true }),
-		email: column.text({ unique: true }),
-		username: column.text({ unique: true, optional: true }), // Made username optional for flexibility
-		passwordHash: column.text({ optional: true }), // Store hashed passwords, NEVER plain text
-		firstName: column.text({ optional: true }),
-		lastName: column.text({ optional: true }),
-		registrationDate: column.date({ default: NOW }),
-		providerId: column.text({ references: () => Provider.columns.id, optional: true }),
 	},
 })
 
