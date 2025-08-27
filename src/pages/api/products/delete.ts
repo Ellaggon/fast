@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro"
-import { db, eq, Product, Provider } from "astro:db"
+import { and, db, eq, Product, Provider } from "astro:db"
 import { getSession } from "auth-astro/server"
 
 export const POST: APIRoute = async ({ request, redirect }) => {
@@ -32,8 +32,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 		const product = await db
 			.select()
 			.from(Product)
-			.where(eq(Product.id, productId))
-			.where(eq(Product.providerId, providerId))
+			.where(and(eq(Product.id, productId), eq(Product.providerId, providerId)))
 			.limit(1)
 
 		if (product.length === 0) {
