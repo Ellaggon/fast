@@ -16,7 +16,10 @@ export const POST: APIRoute = async ({ request }) => {
 		const phone = formData.get("phone")?.toString()
 		const type = formData.get("type")?.toString()
 
-		// Validar los datos (idealmente con Zod o similar)
+		// Validar los datos
+		if (!email) {
+			return new Response(JSON.stringify({ error: "No hay email en la sesion" }), { status: 400 })
+		}
 		if (!companyName || !contactEmail || !type) {
 			return new Response(JSON.stringify({ error: "Faltan campos obligatorios" }), { status: 400 })
 		}
