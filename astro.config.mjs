@@ -2,10 +2,13 @@ import { defineConfig, passthroughImageService } from "astro/config"
 import tailwind from "@astrojs/tailwind"
 import auth from "auth-astro"
 import vercel from "@astrojs/vercel"
+import node from "@astrojs/node"
 import db from "@astrojs/db"
 import dotenv from "dotenv"
 
 dotenv.config()
+
+const isVercel = process.env.VERCEL === "1"
 
 // https://astro.build/config
 export default defineConfig({
@@ -18,11 +21,13 @@ export default defineConfig({
 		},
 	},
 	output: "server",
-	adapter: vercel({
-		webAnalytics: {
-			enabled: true,
-		},
-	}),
+	adapter: isVercel
+		? vercel({
+				webAnalytics: { enabled: true },
+			})
+		: node({
+				mode: "standalone",
+			}),
 	image: {
 		service: passthroughImageService(),
 	},
