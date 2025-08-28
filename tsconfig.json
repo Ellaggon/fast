@@ -3,26 +3,14 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     // "allowJs": true,
     // "checkJs": false,
     "jsx": "preserve",
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "astro:db": ["./node_modules/@astrojs/db"]
+      "@/*": ["./src/*"]
     }
-  },
-  "include": [
-    "src",
-    "db",
-    "*.ts",
-    "**/*.astro",
-    "env.d.ts",
-    ".astro/types.d.ts",
-    ".astro/integrations/astro_db/db.d.ts"
-  ],
-  "exclude": ["node_modules"]
-  // "resolveJsonModule": true
+  }
 }
