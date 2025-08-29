@@ -21,13 +21,7 @@ export default defineConfig({
 		},
 	},
 	output: "server",
-	adapter: isVercel
-		? vercel({
-				webAnalytics: { enabled: true },
-			})
-		: node({
-				mode: "standalone",
-			}),
+	adapter: isVercel ? vercel() : node({ mode: "standalone" }),
 	image: {
 		service: passthroughImageService(),
 	},
