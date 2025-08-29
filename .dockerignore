@@ -1,7 +1,0 @@
-node_modules
-.git
-.DS_Store
-.env
-.astro
-npm-debug.log
-yarn-error.log
