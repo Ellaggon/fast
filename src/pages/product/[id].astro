@@ -14,7 +14,7 @@ try {
 	const productResult = await db
 		.select()
 		.from(Product)
-		.where(eq(Product.id, productId))
+		.where(eq(Product.id, String(productId)))
 		.leftJoin(Tour, eq(Product.id, Tour.productId))
 		.leftJoin(Package, eq(Product.id, Package.productId))
 		.limit(1)
