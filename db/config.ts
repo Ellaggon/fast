@@ -120,7 +120,13 @@ const Package = defineTable({
 const Image = defineTable({
 	columns: {
 		id: column.text({ primaryKey: true }),
-		productId: column.text({ references: () => Product.columns.id, optional: true }), // Images can be related to a product
+		productId: column.text({
+			references: () => Product.columns.id,
+			optional: true,
+			deprecated: true,
+		}), // Images can be related to a product
+		entityType: column.text({ optional: true }), // e.g. "Product", "Hotel", "City"
+		entityId: column.text({ optional: true }), // ID de la entidad
 		url: column.text(),
 		altText: column.text({ optional: true }),
 		order: column.number({ default: 0 }),
