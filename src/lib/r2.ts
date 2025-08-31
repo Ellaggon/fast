@@ -9,6 +9,9 @@ export const r2 = new S3Client({
 	},
 })
 
+export const R2_PUBLIC_BASE_URL = process.env.R2_PUBLIC_BASE_URL || ""
+export const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || ""
+
 export async function deleteObjectFromR2(bucket: string, key: string) {
 	try {
 		const command = new DeleteObjectCommand({ Bucket: bucket, Key: key })
