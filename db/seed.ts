@@ -1,4 +1,4 @@
-import { db, City } from "astro:db"
+import { db, City, eq } from "astro:db"
 import { isDepartmentId } from "@/data/departments"
 
 function dept(id: string) {
@@ -8,7 +8,7 @@ function dept(id: string) {
 	return id
 }
 export default async function seed() {
-	await db.insert(City).values([
+	const cities = [
 		{
 			id: "uuid-city-cobija",
 			name: "Cobija",
@@ -90,5 +90,12 @@ export default async function seed() {
 			description:
 				"Santa Cruz de la Sierra es la capital del oriente boliviano y un oasis de modernidad y tradición. Con su clima cálido y su atmósfera relajada, es el punto de partida ideal para explorar la selva, los safaris fotográficos y las impresionantes ruinas de las misiones jesuíticas. Disfruta de la hospitalidad cruceña y de su deliciosa cocina, donde el sabor de la tierra es protagonista.",
 		},
-	])
+	]
+
+	for (const city of cities) {
+		const exists = await db.select().from(City).where(eq(City.id, city.id))
+		if (exists.length === 0) {
+			await db.insert(City).values(cities)
+		}
+	}
 }
